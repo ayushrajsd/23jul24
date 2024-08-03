@@ -1,9 +1,11 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 
 const userRouter = express.Router();
 
 userRouter.post("/register", async (req, res) => {
+  console.log("req received", req.body);
   // api/users/register
   try {
     const userExists = await User.findOne({ email: req.body.email });
@@ -35,7 +37,11 @@ userRouter.post("/login", async (req, res) => {
     if (req.body.password !== user.password) {
       return res.send({ success: false, message: "Invalid Password" });
     }
-    res.send({ success: true, message: "Login Successful" });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+    console.log("token", token);
+    res.send({ success: true, message: "Login Successful", data: token });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

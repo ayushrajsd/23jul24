@@ -9,6 +9,10 @@ const connectDb = require("./config/db");
 connectDb();
 
 /** * Routes */
+app.use((req, res, next) => {
+  console.log("request received on server", req.body, req.url);
+  next();
+});
 app.use("/api/users", userRouter);
 
 app.listen(8082, () => {
