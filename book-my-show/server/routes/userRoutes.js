@@ -1,6 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
+const authMiddleware = require("../middlewares/authMiddleware");
 
 const userRouter = express.Router();
 
@@ -42,6 +43,20 @@ userRouter.post("/login", async (req, res) => {
     });
     console.log("token", token);
     res.send({ success: true, message: "Login Successful", data: token });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+userRouter.get("/get-current-user", authMiddleware, async (req, res) => {
+  console.log("proceesing request");
+  try {
+    const user = await User.findById(req.body.userId).select("-password");
+    res.send({
+      success: true,
+      data: user,
+      message: "You are authorized to go to the protected route",
+    });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
