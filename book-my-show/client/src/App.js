@@ -10,6 +10,8 @@ import store from "./redux/store";
 import Admin from "./pages/Admin";
 import Profile from "./pages/User";
 import Partner from "./pages/Partner";
+import SingleMovie from "./pages/Home/SingleMovie";
+import BookShow from "./pages/Home/BookShow";
 
 function App() {
   return (
@@ -48,6 +50,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Partner />
+                </ProtectedRoute>
+              }
+            ></Route>
+            <Route
+              path="/movie/:id"
+              element={
+                <ProtectedRoute>
+                  <SingleMovie />
+                </ProtectedRoute>
+              }
+            ></Route>
+            <Route
+              path="/book-show/:id"
+              element={
+                <ProtectedRoute>
+                  <BookShow />
                 </ProtectedRoute>
               }
             ></Route>
