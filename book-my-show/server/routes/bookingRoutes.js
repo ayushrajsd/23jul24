@@ -1,8 +1,32 @@
+/**
+ * Integration of sendgrid for sending emails to users
+ * using nodemailer
+ * sending otp for reset password
+ * sending tickets on email
+ * 
+ *backbone of email comms - SMTP servers 
+ STP servers are like Post office 
+ HOw SMTP server works:
+ 1.Writing the email ( compsosing the letter)
+ 2. Sending to SMTP server ( dropping at the post office ) 
+ 3. Routing the email ( sorting and delivery of letters )
+ 4, recipient;s email server ( destination post office)
+
+ Nodemailer -> npm package for sending emails
+
+ how nodemailer works
+ a. installation
+ b. transport configuration -> smpt server. ,port, auth
+ c. sending email -> from, to, subject, text, html, attachments
+ *
+ */
+
 const router = require("express").Router();
 const stripe = require("stripe")(process.env.STRIPE_KEY);
 const authMiddleware = require("../middlewares/authMiddleware");
 const Booking = require("../models/bookingModel");
 const Show = require("../models/showModel");
+const EmailHelper = require("../utils/emailHelper");
 
 router.post("/make-payment", authMiddleware, async (req, res) => {
   try {
@@ -39,6 +63,35 @@ router.post("/book-show", authMiddleware, async (req, res) => {
     const updatedBookedSeats = [...show.bookedSeats, req.body.seats];
     await Show.findByIdAndUpdate(req.body.show, {
       bookedSeats: updatedBookedSeats,
+    });
+    // add more details to the booking and send the email
+    const populatedBooking = await Booking.findById(newBooking._id)
+      .populate("user")
+      .populate("show")
+      .populate({
+        path: "show",
+        populate: {
+          path: "movie",
+          model: "movies",
+        },
+      })
+      .populate({
+        path: "show",
+        populate: {
+          path: "theatre",
+          model: "theatres",
+        },
+      });
+    console.log("this is populated booking", populatedBooking);
+    await EmailHelper("ticket_template.html", populatedBooking.user.email, {
+      name: populatedBooking.user.name,
+      movie: populatedBooking.show.movie.title,
+      theatre: populatedBooking.show.theatre.name,
+      date: populatedBooking.show.date,
+      time: populatedBooking.show.time,
+      seats: populatedBooking.seats,
+      amount: populatedBooking.seats.length * populatedBooking.show.ticketPrice,
+      transactionId: populatedBooking.transactionId,
     });
     res.send({
       success: true,
