@@ -1,6 +1,11 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
 const app = express();
 app.use(express.json());
+app.use(helmet());
+app.use(mongoSanitize());
 require("dotenv").config(); // load the environment variables into process.env
 
 const userRouter = require("./routes/userRoutes");
@@ -17,6 +22,15 @@ app.use((req, res, next) => {
   console.log("request received on server", req.body, req.url);
   next();
 });
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again after 15 minutes",
+});
+
+// apply rate limiter to all API requests
+app.use("/api/", apiLimiter);
+
 app.use("/api/users", userRouter);
 app.use("/api/movies", movieRouter);
 app.use("/api/theatres", theatreRouter);

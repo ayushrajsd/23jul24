@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const authMiddleware = require("../middlewares/authMiddleware");
 const EmailHelper = require("../utils/emailHelper");
+const bcrypt = require("bcrypt");
 
 const userRouter = express.Router();
 
@@ -14,7 +15,16 @@ userRouter.post("/register", async (req, res) => {
     if (userExists) {
       return res.send({ success: false, message: "User already exists" });
     }
-    const newUser = new User(req.body); // create a new user document
+    const saltRounds = 10; // the higher the number, the more secure and slower  the hashing process
+    const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
+    console.log("hashedPassword", hashedPassword);
+
+    const newUser = new User({
+      ...req.body, // spread operator
+      password: hashedPassword,
+    });
+
+    // const newUser = new User(req.body); // create a new user document
     await newUser.save(); // save the document to the database
 
     res.send({
@@ -26,6 +36,17 @@ userRouter.post("/register", async (req, res) => {
   }
 });
 
+async function hashPassword(password) {
+  console.time("time taken");
+  const salt = await bcrypt.genSalt(14);
+  console.log("salt", salt);
+  const hashedPassword = await bcrypt.hash(password, salt);
+  console.log("hashedPassword", hashedPassword);
+  console.timeEnd("time taken");
+  console.log("******************");
+  return hashPassword;
+}
+
 userRouter.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
@@ -36,13 +57,20 @@ userRouter.post("/login", async (req, res) => {
       });
     }
 
-    if (req.body.password !== user.password) {
+    const isMatch = await bcrypt.compare(req.body.password, user.password);
+    if (!isMatch) {
       return res.send({ success: false, message: "Invalid Password" });
     }
+
+    // if (req.body.password !== user.password) {
+    //   return res.send({ success: false, message: "Invalid Password" });
+    // }
+    const password = "Ayush@123";
+    hashPassword(password);
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-    console.log("token", token);
+    // console.log("token", token);
     res.send({ success: true, message: "Login Successful", data: token });
   } catch (err) {
     res.status(400).json({ message: err.message });
